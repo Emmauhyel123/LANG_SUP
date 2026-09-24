@@ -1,0 +1,97 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isStaff() {
+      return isSignedIn() && (
+        request.auth.token.email == 'emmanuelhyeladi070@gmail.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff')
+      );
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'name', 'email', 'role', 'academic_year', 'department']) &&
+             data.keys().hasOnly(['id', 'name', 'email', 'role', 'academic_year', 'department', 'enrolled_date']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.email is string && data.email.size() > 0 && data.email.size() <= 150 &&
+             (data.role == 'student' || data.role == 'staff') &&
+             data.academic_year is number &&
+             data.department is string && data.department.size() <= 150;
+    }
+
+    function isValidAssessment(data) {
+      return data.keys().hasAll(['id', 'student_id', 'academic_year', 'type', 'scenario_title', 'timestamp', 'duration_seconds']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.student_id is string && data.student_id.size() <= 128 &&
+             data.academic_year is number &&
+             (data.type == 'interview' || data.type == 'reading' || data.type == 'writing' || data.type == 'baseline') &&
+             data.scenario_title is string && data.scenario_title.size() <= 200 &&
+             data.duration_seconds is number;
+    }
+
+    function isValidRubric(data) {
+      return data.keys().hasAll(['communication_weight', 'speaking_weight', 'listening_weight', 'reading_weight', 'writing_weight', 'strictness_level', 'target_cefr_for_year_3']) &&
+             data.communication_weight is number &&
+             data.speaking_weight is number &&
+             data.listening_weight is number &&
+             data.reading_weight is number &&
+             data.writing_weight is number &&
+             (data.strictness_level == 'standard' || data.strictness_level == 'rigorous' || data.strictness_level == 'lenient') &&
+             data.target_cefr_for_year_3 is string && data.target_cefr_for_year_3.size() <= 10;
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isStaff());
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(userId) && isValidUser(incoming()) && (request.auth.uid == userId || isStaff());
+      allow update: if isSignedIn() && isValidId(userId) && isValidUser(incoming()) && (request.auth.uid == userId || isStaff());
+      allow delete: if isStaff();
+    }
+
+    // Assessments Collection
+    match /assessments/{assessmentId} {
+      allow get: if isSignedIn() && (resource.data.student_id == request.auth.uid || isStaff());
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(assessmentId) && isValidAssessment(incoming()) && (incoming().student_id == request.auth.uid || isStaff());
+      allow update: if isSignedIn() && isValidId(assessmentId) && isValidAssessment(incoming()) && (resource.data.student_id == request.auth.uid || isStaff());
+      allow delete: if isStaff();
+    }
+
+    // Rubrics Collection
+    match /rubrics/{rubricId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isStaff() && isValidRubric(incoming());
+    }
+
+    // Connection testing
+    match /test/{docId} {
+      allow read, write: if isSignedIn();
+    }
+  }
+}

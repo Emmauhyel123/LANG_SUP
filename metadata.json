@@ -1,0 +1,10 @@
+{
+  "name": "LinguaPilot - University Language Assessment Platform",
+  "description": "AI-driven language learning and assessment platform for university pilot studies, tracking students from Year 1 to Year 3 across the five core pillars: Communication, Speaking, Listening, Reading, and Writing.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

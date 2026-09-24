@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "User profile representing a university student or faculty researcher in the longitudinal pilot study",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 150 },
+        "role": { "type": "string", "enum": ["student", "staff"] },
+        "academic_year": { "type": "number" },
+        "department": { "type": "string", "maxLength": 150 },
+        "enrolled_date": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "name", "email", "role", "academic_year", "department"]
+    },
+    "assessment": {
+      "title": "Assessment",
+      "description": "An AI-evaluated mock interview, reading, or writing assessment record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "student_id": { "type": "string", "maxLength": 128 },
+        "academic_year": { "type": "number" },
+        "type": { "type": "string", "enum": ["interview", "reading", "writing", "baseline"] },
+        "scenario_title": { "type": "string", "maxLength": 200 },
+        "timestamp": { "type": "string", "maxLength": 50 },
+        "duration_seconds": { "type": "number" },
+        "score": { "type": "object" },
+        "transcript": { "type": "array" }
+      },
+      "required": ["id", "student_id", "academic_year", "type", "scenario_title", "timestamp", "duration_seconds"]
+    },
+    "rubricConfig": {
+      "title": "RubricConfig",
+      "description": "Institutional rubric calibration weights and strictness settings",
+      "type": "object",
+      "properties": {
+        "communication_weight": { "type": "number" },
+        "speaking_weight": { "type": "number" },
+        "listening_weight": { "type": "number" },
+        "reading_weight": { "type": "number" },
+        "writing_weight": { "type": "number" },
+        "strictness_level": { "type": "string", "enum": ["standard", "rigorous", "lenient"] },
+        "target_cefr_for_year_3": { "type": "string", "maxLength": 10 },
+        "updated_at": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["communication_weight", "speaking_weight", "listening_weight", "reading_weight", "writing_weight", "strictness_level", "target_cefr_for_year_3"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/user" },
+      "description": "User profiles indexed by UID"
+    },
+    "/assessments/{assessmentId}": {
+      "schema": { "$ref": "#/entities/assessment" },
+      "description": "Assessment records across the five language pillars"
+    },
+    "/rubrics/{rubricId}": {
+      "schema": { "$ref": "#/entities/rubricConfig" },
+      "description": "Rubric calibration settings for faculty evaluation"
+    }
+  }
+}
